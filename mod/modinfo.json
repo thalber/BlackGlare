@@ -1,0 +1,14 @@
+{
+	"id": "thalber.blackglare",
+	"name": "Black Glare",
+	"version": "0.1",
+	"authors": "thalber",
+	"description": "WIP",
+	"requirements": [],
+	"requirements_names": [],
+	"tags": [
+		"Dependency",
+		"Tools"
+	],
+	"checksum_override_version": false
+}
