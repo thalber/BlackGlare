@@ -84,21 +84,32 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	#endregion
 	#region look guys im a normal class you can trust me (:
+	public Room? room;
 	public RainWorldGame? game;
 	public readonly System.Collections.Generic.List<FNode> childNodes = new();
+	public virtual bool ClearSpritesOnRoomChange => true;
 	public virtual void Start(RainWorldGame game)
 	{
 		this.game = game;
 	}
-	public virtual void RawUpdate(float delta) { }
-	public virtual void Update() { }
+	public virtual void RawUpdate(float delta)
+	{
+		if (game?.cameras[0].room != this.room)
+		{
+			RoomChanged(game?.cameras[0].room);
+		}
+	}
+	public virtual void Update()
+	{
+
+	}
 	public virtual void AddNode(FNode node)
 	{
 		Futile.stage.AddChild(node);
 		childNodes.Add(node);
 	}
-	public TNode? GetNode<TNode>(int index) 
-		where TNode : FNode 
+	public TNode? GetNode<TNode>(int index)
+		where TNode : FNode
 		=> (index >= 0 && index < childNodes.Count) ? childNodes[index] as TNode : null;
 	public virtual void ClearNodes()
 	{
@@ -108,6 +119,11 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 			node.RemoveFromContainer();
 		}
 		childNodes.Clear();
+	}
+	public virtual void RoomChanged(Room? newRoom)
+	{
+		if (ClearSpritesOnRoomChange) ClearNodes();
+		this.room = newRoom;
 	}
 	#endregion
 }
