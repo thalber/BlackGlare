@@ -86,7 +86,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	#region look guys im a normal class you can trust me (:
 	public Room? room;
 	public RainWorldGame? game;
-	public readonly System.Collections.Generic.List<FNode> childNodes = new();
+	public readonly System.Collections.Generic.Dictionary<string, FNode> childNodes = new();
 	public virtual bool ClearSpritesOnRoomChange => true;
 	public virtual void Start(RainWorldGame game)
 	{
@@ -103,23 +103,43 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	{
 
 	}
-	public virtual void AddNode(FNode node)
+	public virtual void AddNode(string key, FNode node)
 	{
 		Futile.stage.AddChild(node);
-		childNodes.Add(node);
+		childNodes.Add(key, node);
 	}
-	public TNode? GetNode<TNode>(int index)
+	public TNode? GetNode<TNode>(string key)
 		where TNode : FNode
-		=> (index >= 0 && index < childNodes.Count) ? childNodes[index] as TNode : null;
+		=> childNodes.TryGetValue(key, out FNode node) ? node as TNode : null;
 	public virtual void ClearNodes()
 	{
-		for (int i = 0; i < childNodes.Count; i++)
+		foreach ((string key, FNode node) in childNodes)
 		{
-			FNode node = childNodes[i];
 			node.RemoveFromContainer();
 		}
 		childNodes.Clear();
 	}
+	public TNode GetOrCreateNode<TNode>(string key, Func<TNode> factory)
+		where TNode : FNode
+	{
+		TNode? maybeResult = GetNode<TNode>(key);
+		switch (maybeResult)
+		{
+		case TNode result:
+			return result;
+		default:
+		{
+			TNode newNode = factory();
+			AddNode(key, newNode);
+			return newNode;
+		}
+		}
+
+	}
+	public TNode GetOrCreateNode<TNode>(string key)
+		where TNode : FNode, new()
+		=> GetOrCreateNode<TNode>(key, () => new());
+
 	public virtual void RoomChanged(Room? newRoom)
 	{
 		if (ClearSpritesOnRoomChange) ClearNodes();
