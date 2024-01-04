@@ -1,3 +1,6 @@
+using System.Collections;
+using System.Collections.Generic;
+
 using System;
 
 namespace BlackGlare;
@@ -107,6 +110,33 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	{
 		Futile.stage.AddChild(node);
 		childNodes.Add(key, node);
+	}
+	public virtual bool RemoveNode(string key)
+	{
+		switch (GetNode<FNode>(key))
+		{
+		case FNode node:
+		{
+			node.RemoveFromContainer();
+			childNodes.Remove(key);
+			return true;
+		}
+		default:
+			return false;
+		}
+	}
+	public virtual bool RemoveNode(FNode node)
+	{
+		if (childNodes.ContainsValue(node))
+		{
+			node.RemoveFromContainer();
+			//todo: unfuck
+			return childNodes.Remove(childNodes.Keys.First(k => childNodes[k] == node));
+		}
+		else
+		{
+			return false;
+		}
 	}
 	public TNode? GetNode<TNode>(string key)
 		where TNode : FNode
