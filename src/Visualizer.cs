@@ -89,7 +89,8 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	#region look guys im a normal class you can trust me (:
 	public Room? room;
 	public RainWorldGame? game;
-	public readonly System.Collections.Generic.Dictionary<string, FNode> childNodes = new();
+	public readonly List<FNode> childNodes = new();
+	public readonly System.Collections.Generic.Dictionary<string, int> childNodeIndices = new();
 	public virtual bool ClearSpritesOnRoomChange => true;
 	public virtual void Start(RainWorldGame game)
 	{
@@ -109,7 +110,8 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	public virtual void AddNode(string key, FNode node)
 	{
 		Futile.stage.AddChild(node);
-		childNodes.Add(key, node);
+		childNodes.Add(node);
+		childNodeIndices[key] = childNodes.Count - 1;
 	}
 	public virtual bool RemoveNode(string key)
 	{
@@ -118,7 +120,8 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		case FNode node:
 		{
 			node.RemoveFromContainer();
-			childNodes.Remove(key);
+			childNodes.RemoveAt(childNodeIndices[key]);
+			childNodeIndices.Remove(key);
 			return true;
 		}
 		default:
@@ -127,11 +130,13 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	public virtual bool RemoveNode(FNode node)
 	{
-		if (childNodes.ContainsValue(node))
+		if (childNodes.Contains(node))
 		{
 			node.RemoveFromContainer();
 			//todo: unfuck
-			return childNodes.Remove(childNodes.Keys.First(k => childNodes[k] == node));
+			int index = childNodes.IndexOf(node);
+			childNodeIndices.Remove(childNodeIndices.Keys.FirstOrDefault(key => childNodeIndices[key] == index) ?? "");
+			return childNodes.Remove(node);
 		}
 		else
 		{
@@ -140,14 +145,18 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	public TNode? GetNode<TNode>(string key)
 		where TNode : FNode
-		=> childNodes.TryGetValue(key, out FNode node) ? node as TNode : null;
+	{
+		if (childNodeIndices.TryGetValue(key, out int index)) return (TNode)childNodes[index];
+		return null;
+	}
 	public virtual void ClearNodes()
 	{
-		foreach ((string key, FNode node) in childNodes)
+		foreach (FNode node in childNodes)
 		{
 			node.RemoveFromContainer();
 		}
 		childNodes.Clear();
+		childNodeIndices.Clear();
 	}
 	public TNode GetOrCreateNode<TNode>(string key, Func<TNode> factory)
 		where TNode : FNode

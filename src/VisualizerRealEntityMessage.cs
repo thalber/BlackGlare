@@ -4,7 +4,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 {
 	private Mod? mod;
 	private System.Runtime.CompilerServices.ConditionalWeakTable<PhysicalObject, Extras> extraPOStuff = new();
-	private readonly System.Runtime.CompilerServices.ConditionalWeakTable<PhysicalObject, PhysobjPanel> panels = new();
+	private readonly Dictionary<PhysicalObject, PhysobjPanel> panels = new();
 	public override void Start(RainWorldGame game)
 	{
 		base.Start(game);
@@ -16,12 +16,27 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 		if (room is null) return;
 		foreach (UpdatableAndDeletable uad in room.updateList)
 		{
-			if (uad is not PhysicalObject po) continue;
-			PhysobjPanel panel = panels.GetValue(po, (phys) => new(this, phys));
-			if (!childNodes.ContainsValue(panel))
+			try
 			{
-				AddNode($"Panel_{po.GetHashCode()}", panel);
+
+				if (uad is not PhysicalObject po) continue;
+				if (!panels.TryGetValue(po, out PhysobjPanel panel))
+				{
+					string id = $"Panel_{po.GetHashCode()}";
+					panel = new(id, this, po);
+					AddNode(id, panel);
+					panels[po] = panel;
+				}
 			}
+			catch (Exception ex)
+			{
+				LogError("Error on create panel");
+				LogError(ex);
+			}
+		}
+		for (int i = childNodes.Count - 1; i >= 0; i--)
+		{
+			PhysobjPanel panel = (PhysobjPanel)childNodes[i];
 			panel.Update(game?.cameras[0].pos ?? Vector2.zero);
 		}
 	}
@@ -34,16 +49,19 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 	{
 		public int numberOfLabels = -1;
 	}
-	internal sealed class PhysobjPanel : FContainer
+	internal sealed class PhysobjPanel : FContainer, IGetDestroyNotice<UpdatableAndDeletable>
 	{
+		private readonly string id;
 		private readonly VisualizerRealEntityMessage vis;
 		private readonly PhysicalObject obj;
 		//private readonly MessageRegistry<PhysicalObject> registry;
 		private readonly Room room;
 		private readonly FLabel tag;
+		private bool slatedForDeletion = false;
 
-		public PhysobjPanel(VisualizerRealEntityMessage vis, PhysicalObject obj /*, MessageRegistry<PhysicalObject> registry*/)
+		public PhysobjPanel(string id, VisualizerRealEntityMessage vis, PhysicalObject obj /*, MessageRegistry<PhysicalObject> registry*/)
 		{
+			this.id = id;
 			this.vis = vis;
 			this.obj = obj;
 			//this.registry = registry;
@@ -54,14 +72,30 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 				anchorY = 0f,
 			};
 			this.AddChild(tag);
+			vis.mod?.destroyNotifyReceivers.Add(obj, this);
 		}
 		public void Update(Vector2 camPos)
 		{
 			tag.SetPosition(obj.firstChunk.pos - camPos);
-			if (obj.room != room)
+			tag.text = slatedForDeletion ? "dead" : "alive";
+			if (this.slatedForDeletion || obj.slatedForDeletetion || obj.room != room)
 			{
-				vis.RemoveNode(this);
+				try
+				{
+					bool success = vis.RemoveNode(this);
+					LogTrace($"Destroying a panel success : {success}");
+				}
+				catch (Exception ex)
+				{
+					LogError(ex);
+				}
 			}
+		}
+
+		void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
+		{
+			slatedForDeletion = true;
+			LogTrace($"Destroy notification received - {slatedForDeletion}");
 		}
 	}
 }
