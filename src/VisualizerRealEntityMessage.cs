@@ -2,8 +2,7 @@ namespace BlackGlare;
 
 public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntityMessage>
 {
-	private Mod? mod;
-	private System.Runtime.CompilerServices.ConditionalWeakTable<PhysicalObject, Extras> extraPOStuff = new();
+	private Mod mod;
 	private readonly Dictionary<PhysicalObject, PhysobjPanel> panels = new();
 	public override void Start(RainWorldGame game)
 	{
@@ -23,7 +22,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 				if (!panels.TryGetValue(po, out PhysobjPanel panel))
 				{
 					string id = $"Panel_{po.GetHashCode()}";
-					panel = new(id, this, po);
+					panel = new(id, this, po, mod.realEntityMessages);
 					AddNode(id, panel);
 					panels[po] = panel;
 				}
@@ -44,40 +43,87 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 	{
 		base.RoomChanged(newRoom);
 	}
-
-	private class Extras
-	{
-		public int numberOfLabels = -1;
-	}
 	internal sealed class PhysobjPanel : FContainer, IGetDestroyNotice<UpdatableAndDeletable>
 	{
+		private const float LINE_SPACING = 2f;
+		private const float PADDING = 3f;
+		private readonly float lineHeight;
 		private readonly string id;
 		private readonly VisualizerRealEntityMessage vis;
 		private readonly PhysicalObject obj;
-		//private readonly MessageRegistry<PhysicalObject> registry;
+		private readonly MessageRegistry<PhysicalObject> messages;
 		private readonly Room room;
-		private readonly FLabel tag;
+		private readonly FSprite background;
+		private readonly List<FLabel> messageLabels;
+		private readonly FLabel header;
+		//private readonly FLabel tag;
 		private bool slatedForDeletion = false;
 
-		public PhysobjPanel(string id, VisualizerRealEntityMessage vis, PhysicalObject obj /*, MessageRegistry<PhysicalObject> registry*/)
+		public PhysobjPanel(
+			string id,
+			VisualizerRealEntityMessage vis,
+			PhysicalObject obj,
+			MessageRegistry<PhysicalObject> messages)
 		{
 			this.id = id;
 			this.vis = vis;
 			this.obj = obj;
-			//this.registry = registry;
+			this.messages = messages;
 			this.room = obj.room;
-			tag = new(GetFont(), obj.GetType().FullName)
+			vis.mod?.destroyNotifyReceivers.Add(obj, this);
+			lineHeight = Futile.atlasManager.GetFontWithName(GetFont()).lineHeight;
+			header = new(GetFont(), $"{obj.GetType().Name} {obj.abstractPhysicalObject.ID}")
 			{
 				anchorX = 0f,
-				anchorY = 0f,
+				anchorY = 1f,
+				color = new(0.529f, 0.365f, 0.184f),
 			};
-			this.AddChild(tag);
-			vis.mod?.destroyNotifyReceivers.Add(obj, this);
+			background = new FSprite("pixel")
+			{
+				anchorX = 0f,
+				anchorY = 1f,
+				color = new(0.3f, 0.3f, 0.3f),
+				alpha = 0.5f
+			};
+			AddChild(header);
+			AddChild(background);
+			messageLabels = new();
 		}
 		public void Update(Vector2 camPos)
 		{
-			tag.SetPosition(obj.firstChunk.pos - camPos);
-			tag.text = slatedForDeletion ? "dead" : "alive";
+			Vector2
+				origin = obj.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE,
+				bounds = Vector2.zero;
+			float lh = (lineHeight + LINE_SPACING);
+			void addedLine(float lw)
+			{
+				origin += new Vector2(0f, -lh);
+				bounds.y += lh;
+				bounds.x = Mathf.Max(bounds.x, lw);
+			}
+			background.SetPosition(origin - new Vector2(PADDING, PADDING));
+			header.SetPosition(origin);
+			addedLine(header.textRect.width);
+			string[] requestedMessages = messages.GetAllMessages(obj).ToArray();
+			for (int i = 0; i < requestedMessages.Length || i < messageLabels.Count; i++)
+			{
+				bool drawMessage = requestedMessages.IndexInRange(i);
+				FLabel currentLabel = GetOrAddLabel(i);
+				currentLabel.MoveInFrontOfOtherNode(background);
+				currentLabel.isVisible = drawMessage;
+				if (!drawMessage)
+				{
+					continue;
+				}
+				currentLabel.text = requestedMessages[i];
+				currentLabel.SetPosition(origin);
+				float width = currentLabel.textRect.width;
+				addedLine(width);
+			}
+			background.width = bounds.x + PADDING * 2f;
+			background.height = bounds.y + PADDING * 2f;
+			background.isVisible = header.isVisible = requestedMessages.Length is not 0;
+
 			if (this.slatedForDeletion || obj.slatedForDeletetion || obj.room != room)
 			{
 				try
@@ -91,7 +137,27 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 				}
 			}
 		}
-
+		public void AddLabel(FLabel label)
+		{
+			AddChild(label);
+			messageLabels.Add(label);
+			//return messageLabels.Count - 1;
+		}
+		public FLabel GetOrAddLabel(int index)
+		{
+			if (messageLabels.IndexInRange(index))
+			{
+				return messageLabels[index];
+			}
+			else
+			{
+				AddLabel(new FLabel(GetFont(), "__TEXT__") {
+					anchorX = 0f,
+					anchorY = 1f
+				}); 
+				return messageLabels[messageLabels.Count - 1];
+			}
+		}
 		void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
 		{
 			slatedForDeletion = true;

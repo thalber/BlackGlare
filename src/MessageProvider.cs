@@ -14,14 +14,16 @@ public abstract class MessageProvider<TSubject>
 	}
 	public virtual string? GetMessage(TSubject item) => item?.ToString() ?? null;
 
-	// public class Downcast<TDown> : MessageProvider<TSubject>
-	// {
-	// 	public Downcast(Selector<TSubject> selector, Guid guid) : base(selector, guid)
-	// 	{
-	// 	}
-	// 	public override string? GetMessage(TSubject item)
-	// 	{
-	// 		return base.GetMessage(item);
-	// 	}
-	// }
+	public sealed class ByCallback : MessageProvider<TSubject>
+	{
+		private readonly Func<TSubject, string?> messageCallback;
+
+		public ByCallback(Selector<TSubject> selector, Guid guid, Func<TSubject, string?> messageCallback) : base(selector, guid)
+		{
+			this.messageCallback = messageCallback;
+		}
+		public override string? GetMessage(TSubject item) => messageCallback(item);
+
+
+	}
 }
