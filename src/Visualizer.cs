@@ -22,6 +22,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		On.RainWorldGame.ctor += Hook_RWGConstructor;
 		On.RainWorldGame.RawUpdate += Hook_RWGRawUpdate;
 		On.RainWorldGame.Update += Hook_RWGUpdate;
+		On.RainWorldGame.ShutDownProcess += Hook_RWGShutdown;
 		return new(typeof(TSelf), Undo);
 	}
 	public static void Undo()
@@ -29,6 +30,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		On.RainWorldGame.ctor -= Hook_RWGConstructor;
 		On.RainWorldGame.RawUpdate -= Hook_RWGRawUpdate;
 		On.RainWorldGame.Update -= Hook_RWGUpdate;
+		On.RainWorldGame.ShutDownProcess -= Hook_RWGShutdown;
 	}
 	private static void Hook_RWGConstructor(On.RainWorldGame.orig_ctor orig, RainWorldGame self, ProcessManager manager)
 	{
@@ -58,7 +60,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 			}
 			catch (Exception ex)
 			{
-				logger?.LogError($"Error on update");
+				logger?.LogError($"Error on rawupdate");
 				logger?.LogError(ex);
 			}
 		}
@@ -85,8 +87,32 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 			}
 		}
 	}
+	private static void Hook_RWGShutdown(On.RainWorldGame.orig_ShutDownProcess orig, RainWorldGame self)
+	{
+		try
+		{
+
+			orig(self);
+		}
+		finally
+		{
+			try
+			{
+				if (instances.TryGetValue(self, out TSelf result))
+				{
+					result.ShutDown();
+				}
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError($"Error shutting down visualizer");
+				logger?.LogError(ex);
+			}
+		}
+	}
 	#endregion
 	#region look guys im a normal class you can trust me (:
+	public bool isVisible = true;
 	public Room? room;
 	public RainWorldGame? game;
 	public readonly List<FNode> childNodes = new();
@@ -105,7 +131,14 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	public virtual void Update()
 	{
-
+		foreach (FNode node in childNodes)
+		{
+			node.isVisible = isVisible;
+		}
+	}
+	public void ShutDown()
+	{
+		ClearNodes();
 	}
 	public virtual void AddNode(string key, FNode node)
 	{
