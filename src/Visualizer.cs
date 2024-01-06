@@ -1,8 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-
-using System;
-
 namespace BlackGlare;
 
 public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
@@ -40,7 +35,15 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		}
 		finally
 		{
-			instances.Add(self, Visualizer<TSelf>.Make(self));
+			try
+			{
+				instances.Add(self, Visualizer<TSelf>.Make(self));
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError($"Error on init");
+				logger?.LogError(ex);
+			}
 		}
 	}
 	private static void Hook_RWGRawUpdate(On.RainWorldGame.orig_RawUpdate orig, RainWorldGame self, float delta)
@@ -116,7 +119,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	public Room? room;
 	public RainWorldGame? game;
 	public readonly List<FNode> childNodes = new();
-	public readonly System.Collections.Generic.Dictionary<string, int> childNodeIndices = new();
+	public readonly Dictionary<string, int> childNodeIndices = new();
 	public virtual bool ClearSpritesOnRoomChange => true;
 	public virtual void Start(RainWorldGame game)
 	{
@@ -153,8 +156,14 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		case FNode node:
 		{
 			node.RemoveFromContainer();
-			childNodes.RemoveAt(childNodeIndices[key]);
+			int index = childNodeIndices[key];
+			childNodes.RemoveAt(index);
 			childNodeIndices.Remove(key);
+			(string Key, int Value)[]? needDecrement = childNodeIndices.Select(kvp => (kvp.Key, kvp.Value)).Where(pair => pair.Value > index).ToArray();
+			foreach ((string candKey, int candIndex) in needDecrement)
+			{
+				childNodeIndices[candKey] = candIndex - 1;
+			}
 			return true;
 		}
 		default:
