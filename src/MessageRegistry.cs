@@ -2,13 +2,13 @@ namespace BlackGlare;
 
 internal class MessageRegistry<TSubject>
 {
-	public readonly System.Collections.Generic.List<MessageProvider<TSubject>> messageProviders = new();
+	public readonly System.Collections.Generic.List<Descriptor<TSubject>> messageProviders = new();
 
 	public System.Collections.Generic.IEnumerable<string> GetAllMessages(TSubject subject)
 	{
 		for (int i = 0; i < messageProviders.Count; i++)
 		{
-			MessageProvider<TSubject> provider = messageProviders[i];
+			Descriptor<TSubject> provider = messageProviders[i];
 			if (
 				provider.selector.Selected(subject)
 				&& provider.GetMessage(subject) is string message
@@ -18,12 +18,12 @@ internal class MessageRegistry<TSubject>
 			}
 		}
 	}
-	public void AddProvider(MessageProvider<TSubject> provider) => messageProviders.Add(provider);
+	public void AddProvider(Descriptor<TSubject> provider) => messageProviders.Add(provider);
 	public bool RemoveProvider(System.Guid guid)
 	{
 		for (int i = 0; i < messageProviders.Count; i++)
 		{
-			MessageProvider<TSubject> provider = messageProviders[i];
+			Descriptor<TSubject> provider = messageProviders[i];
 			if (provider.guid == guid)
 			{
 				messageProviders.RemoveAt(i);
@@ -32,5 +32,5 @@ internal class MessageRegistry<TSubject>
 		}
 		return false;
 	}
-	public bool RemoveProvider(MessageProvider<TSubject> provider) => messageProviders.Remove(provider);
+	public bool RemoveProvider(Descriptor<TSubject> provider) => messageProviders.Remove(provider);
 }
