@@ -2,6 +2,7 @@
 
 public static class RainWorldTools
 {
+	public readonly static Vector2 UNSCRUNGLE_FUTILE = new(0.01f, 0.01f);
 	/// <summary>
 	/// Current RainWorld instance. Uses Unity lookup, may be slow.
 	/// </summary>

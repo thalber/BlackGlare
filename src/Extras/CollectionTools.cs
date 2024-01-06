@@ -110,6 +110,7 @@ public static class CollectionTools
 	// 	return true;
 	// }
 	internal static bool IndexInRange<T>(this T[] arr, int index) => index > -1 && index < arr.Length;
+	internal static bool IndexInRange<T>(this List<T> list, int index) => index > -1 && index < list.Count;
 
 	public static IEnumerable<int> Indices(this IList list)
 	{
