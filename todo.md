@@ -1,7 +1,6 @@
 ## def
 
 - write linqy api
-- add culling to physvis
 - add abstract and room visualizers
 - add visualizer toggle buttons
 
@@ -15,3 +14,4 @@
 - descriptors
 - visualizer base
 - physobj visualizer base
+- add culling to physvis

@@ -19,7 +19,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			{
 
 				if (uad is not PhysicalObject po) continue;
-				if (!panels.TryGetValue(po, out PhysobjPanel panel))
+				if (!panels.TryGetValue(po, out PhysobjPanel panel) || !childNodes.Contains(panel))
 				{
 					string id = $"Panel_{po.GetHashCode()}";
 					panel = new(id, this, po, mod.realEntityMessages);
@@ -36,7 +36,9 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 		for (int i = childNodes.Count - 1; i >= 0; i--)
 		{
 			PhysobjPanel panel = (PhysobjPanel)childNodes[i];
-			panel.Update(game?.cameras[0].pos ?? Vector2.zero);
+			RoomCamera? roomCamera = game?.cameras[0];
+			if (roomCamera is null) continue;
+			panel.Update(roomCamera, roomCamera.pos);
 		}
 	}
 	public override void RoomChanged(Room? newRoom)
@@ -70,7 +72,10 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			this.obj = obj;
 			this.messages = messages;
 			this.room = obj.room;
-			vis.mod?.destroyNotifyReceivers.Add(obj, this);
+			if (!(vis.mod?.destroyNotifyReceivers.TryGetValue(obj, out _) ?? false))
+			{
+				vis.mod?.destroyNotifyReceivers.Add(obj, this);
+			}
 			lineHeight = Futile.atlasManager.GetFontWithName(GetFont()).lineHeight;
 			header = new(GetFont(), $"{obj.GetType().Name} {obj.abstractPhysicalObject.ID}")
 			{
@@ -89,11 +94,12 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			AddChild(background);
 			messageLabels = new();
 		}
-		public void Update(Vector2 camPos)
+		public void Update(RoomCamera cam, Vector2 camPos)
 		{
 			Vector2
 				origin = obj.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE,
 				bounds = Vector2.zero;
+			bool drawAtAll = vis.isVisible && new Rect(Vector2.zero, cam.sSize).Contains(origin);
 			float lh = (lineHeight + LINE_SPACING);
 			void addedLine(float lw)
 			{
@@ -104,7 +110,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			background.SetPosition(origin - new Vector2(PADDING, PADDING));
 			header.SetPosition(origin);
 			addedLine(header.textRect.width);
-			string[] requestedMessages = messages.GetAllMessages(obj).ToArray();
+			string[] requestedMessages = drawAtAll ? messages.GetAllMessages(obj).ToArray() : Array.Empty<string>();
 			for (int i = 0; i < requestedMessages.Length || i < messageLabels.Count; i++)
 			{
 				bool drawMessage = requestedMessages.IndexInRange(i);
@@ -151,10 +157,11 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			}
 			else
 			{
-				AddLabel(new FLabel(GetFont(), "__TEXT__") {
+				AddLabel(new FLabel(GetFont(), "__TEXT__")
+				{
 					anchorX = 0f,
 					anchorY = 1f
-				}); 
+				});
 				return messageLabels[messageLabels.Count - 1];
 			}
 		}
