@@ -45,7 +45,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 	{
 		base.RoomChanged(newRoom);
 	}
-	internal sealed class PhysobjPanel : FContainer, IGetDestroyNotice<UpdatableAndDeletable>
+	internal sealed class PhysobjPanel : FContainer
 	{
 		private const float LINE_SPACING = 2f;
 		private const float PADDING = 3f;
@@ -72,10 +72,10 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			this.obj = obj;
 			this.messages = messages;
 			this.room = obj.room;
-			if (!(vis.mod?.destroyNotifyReceivers.TryGetValue(obj, out _) ?? false))
-			{
-				vis.mod?.destroyNotifyReceivers.Add(obj, this);
-			}
+			// if (!(vis.mod?.destroyNotifyReceivers.TryGetValue(obj, out _) ?? false))
+			// {
+			// 	vis.mod?.destroyNotifyReceivers.Add(obj, this);
+			// }
 			lineHeight = Futile.atlasManager.GetFontWithName(GetFont()).lineHeight;
 			header = new(GetFont(), $"{obj.GetType().Name} {obj.abstractPhysicalObject.ID}")
 			{
@@ -130,7 +130,10 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			background.height = bounds.y + PADDING * 2f;
 			background.isVisible = header.isVisible = requestedMessages.Length is not 0;
 
-			if (this.slatedForDeletion || obj.slatedForDeletetion || obj.room != room)
+			if (this.slatedForDeletion
+				|| obj.slatedForDeletetion
+				|| obj.abstractPhysicalObject.slatedForDeletion
+				|| obj.room != room)
 			{
 				try
 				{
@@ -165,10 +168,10 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 				return messageLabels[messageLabels.Count - 1];
 			}
 		}
-		void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
-		{
-			slatedForDeletion = true;
-			LogTrace($"Destroy notification received - {slatedForDeletion}");
-		}
+		// void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
+		// {
+		// 	slatedForDeletion = true;
+		// 	LogTrace($"Destroy notification received - {slatedForDeletion}");
+		// }
 	}
 }
