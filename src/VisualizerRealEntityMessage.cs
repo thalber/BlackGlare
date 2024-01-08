@@ -45,133 +45,32 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 	{
 		base.RoomChanged(newRoom);
 	}
-	internal sealed class PhysobjPanel : FContainer
+	private sealed class PhysobjPanel : AttachedPanel<PhysicalObject>
 	{
-		private const float LINE_SPACING = 2f;
-		private const float PADDING = 3f;
-		private readonly float lineHeight;
-		private readonly string id;
-		private readonly VisualizerRealEntityMessage vis;
-		private readonly PhysicalObject obj;
-		private readonly MessageRegistry<PhysicalObject> messages;
-		private readonly Room room;
-		private readonly FSprite background;
-		private readonly List<FLabel> messageLabels;
-		private readonly FLabel header;
-		//private readonly FLabel tag;
-		private bool slatedForDeletion = false;
-
+		private Room room;
+		protected override string HeaderText => $"{item.GetType().Name} {item.abstractPhysicalObject.ID}";
 		public PhysobjPanel(
 			string id,
 			VisualizerRealEntityMessage vis,
-			PhysicalObject obj,
-			MessageRegistry<PhysicalObject> messages)
+			PhysicalObject item,
+			MessageRegistry<PhysicalObject> messages) : base(
+				id,
+				vis,
+				item,
+				messages)
 		{
-			this.id = id;
-			this.vis = vis;
-			this.obj = obj;
-			this.messages = messages;
-			this.room = obj.room;
-			// if (!(vis.mod?.destroyNotifyReceivers.TryGetValue(obj, out _) ?? false))
-			// {
-			// 	vis.mod?.destroyNotifyReceivers.Add(obj, this);
-			// }
-			lineHeight = Futile.atlasManager.GetFontWithName(GetFont()).lineHeight;
-			header = new(GetFont(), $"{obj.GetType().Name} {obj.abstractPhysicalObject.ID}")
-			{
-				anchorX = 0f,
-				anchorY = 1f,
-				color = new(0.529f, 0.365f, 0.184f),
-			};
-			background = new FSprite("pixel")
-			{
-				anchorX = 0f,
-				anchorY = 1f,
-				color = new(0.3f, 0.3f, 0.3f),
-				alpha = 0.5f
-			};
-			AddChild(header);
-			AddChild(background);
-			messageLabels = new();
+			room = item.room;
 		}
-		public void Update(RoomCamera cam, Vector2 camPos)
+		public override Vector2 GetAttachPos(RoomCamera cam, Vector2 camPos) => item.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE;
+		public override void Update(RoomCamera cam, Vector2 camPos)
 		{
-			Vector2
-				origin = obj.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE,
-				bounds = Vector2.zero;
-			bool drawAtAll = vis.isVisible && new Rect(Vector2.zero, cam.sSize).Contains(origin);
-			float lh = (lineHeight + LINE_SPACING);
-			void addedLine(float lw)
+			if (item.slatedForDeletetion
+				|| item.abstractPhysicalObject.slatedForDeletion
+				|| item.room != this.room)
 			{
-				origin += new Vector2(0f, -lh);
-				bounds.y += lh;
-				bounds.x = Mathf.Max(bounds.x, lw);
+				slatedForDeletion = true;
 			}
-			background.SetPosition(origin - new Vector2(PADDING, PADDING));
-			header.SetPosition(origin);
-			addedLine(header.textRect.width);
-			string[] requestedMessages = drawAtAll ? messages.GetAllMessages(obj).ToArray() : Array.Empty<string>();
-			for (int i = 0; i < requestedMessages.Length || i < messageLabels.Count; i++)
-			{
-				bool drawMessage = requestedMessages.IndexInRange(i);
-				FLabel currentLabel = GetOrAddLabel(i);
-				currentLabel.MoveInFrontOfOtherNode(background);
-				currentLabel.isVisible = drawMessage;
-				if (!drawMessage)
-				{
-					continue;
-				}
-				currentLabel.text = requestedMessages[i];
-				currentLabel.SetPosition(origin);
-				float width = currentLabel.textRect.width;
-				addedLine(width);
-			}
-			background.width = bounds.x + PADDING * 2f;
-			background.height = bounds.y + PADDING * 2f;
-			background.isVisible = header.isVisible = requestedMessages.Length is not 0;
-
-			if (this.slatedForDeletion
-				|| obj.slatedForDeletetion
-				|| obj.abstractPhysicalObject.slatedForDeletion
-				|| obj.room != room)
-			{
-				try
-				{
-					bool success = vis.RemoveNode(this);
-					LogTrace($"Destroying a panel success : {success}");
-				}
-				catch (Exception ex)
-				{
-					LogError(ex);
-				}
-			}
+			base.Update(cam, camPos);
 		}
-		public void AddLabel(FLabel label)
-		{
-			AddChild(label);
-			messageLabels.Add(label);
-			//return messageLabels.Count - 1;
-		}
-		public FLabel GetOrAddLabel(int index)
-		{
-			if (messageLabels.IndexInRange(index))
-			{
-				return messageLabels[index];
-			}
-			else
-			{
-				AddLabel(new FLabel(GetFont(), "__TEXT__")
-				{
-					anchorX = 0f,
-					anchorY = 1f
-				});
-				return messageLabels[messageLabels.Count - 1];
-			}
-		}
-		// void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
-		// {
-		// 	slatedForDeletion = true;
-		// 	LogTrace($"Destroy notification received - {slatedForDeletion}");
-		// }
 	}
 }

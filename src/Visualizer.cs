@@ -227,4 +227,143 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		this.room = newRoom;
 	}
 	#endregion
+
+	internal abstract class AttachedPanel<TItem> : FContainer
+		where TItem : notnull
+	{
+		protected const float LINE_SPACING = 2f;
+		protected const float PADDING = 3f;
+		protected readonly float lineHeight;
+		protected readonly string id;
+		protected readonly Visualizer<TSelf> vis;
+		protected readonly TItem item;
+		protected readonly MessageRegistry<TItem> messages;
+		protected readonly FSprite background;
+		protected readonly List<FLabel> messageLabels;
+		protected readonly FLabel header;
+
+		protected virtual string HeaderText { get => item.ToString(); }
+		protected virtual Color HeaderCol { get => new(0.529f, 0.365f, 0.184f); }
+		//protected abstract Vector2 AttachPos { get; }
+
+		//private readonly FLabel tag;
+		protected bool slatedForDeletion = false;
+
+		public AttachedPanel(
+			string id,
+			Visualizer<TSelf> vis,
+			TItem item,
+			MessageRegistry<TItem> messages)
+		{
+			this.id = id;
+			this.vis = vis;
+			this.item = item;
+			this.messages = messages;
+			//this.room = item.room;
+
+			lineHeight = Futile.atlasManager.GetFontWithName(GetFont()).lineHeight;
+			header = new(
+				GetFont(),
+				HeaderText
+				//$"{item.GetType().Name} {item.abstractPhysicalObject.ID}"
+				)
+			{
+				anchorX = 0f,
+				anchorY = 1f,
+				color = HeaderCol,
+			};
+			background = new FSprite("pixel")
+			{
+				anchorX = 0f,
+				anchorY = 1f,
+				color = new(0.3f, 0.3f, 0.3f),
+				alpha = 0.5f
+			};
+			AddChild(header);
+			AddChild(background);
+			messageLabels = new();
+		}
+		public abstract Vector2 GetAttachPos(RoomCamera cam, Vector2 camPos);
+		public virtual void Update(RoomCamera cam, Vector2 camPos)
+		{
+			Vector2
+				origin = GetAttachPos(cam, camPos),//item.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE,
+				bounds = Vector2.zero;
+			bool drawAtAll = vis.isVisible && new Rect(Vector2.zero, cam.sSize).Contains(origin);
+			float lh = (lineHeight + LINE_SPACING);
+			void addedLine(float lw)
+			{
+				origin += new Vector2(0f, -lh);
+				bounds.y += lh;
+				bounds.x = Mathf.Max(bounds.x, lw);
+			}
+			background.SetPosition(origin - new Vector2(PADDING, PADDING));
+			header.SetPosition(origin);
+			addedLine(header.textRect.width);
+			string[] requestedMessages = drawAtAll ? messages.GetAllMessages(item).ToArray() : Array.Empty<string>();
+			for (int i = 0; i < requestedMessages.Length || i < messageLabels.Count; i++)
+			{
+				bool drawMessage = requestedMessages.IndexInRange(i);
+				FLabel currentLabel = GetOrAddLabel(i);
+				currentLabel.MoveInFrontOfOtherNode(background);
+				currentLabel.isVisible = drawMessage;
+				if (!drawMessage)
+				{
+					continue;
+				}
+				currentLabel.text = requestedMessages[i];
+				currentLabel.SetPosition(origin);
+				float width = currentLabel.textRect.width;
+				addedLine(width);
+			}
+			background.width = bounds.x + PADDING * 2f;
+			background.height = bounds.y + PADDING * 2f;
+			background.isVisible = header.isVisible = requestedMessages.Length is not 0;
+
+			if (
+				this.slatedForDeletion
+				// || item.slatedForDeletetion
+				// || item.abstractPhysicalObject.slatedForDeletion
+				// || item.room != room
+				)
+			{
+				try
+				{
+					bool success = vis.RemoveNode(this);
+					LogTrace($"Destroying a panel success : {success}");
+				}
+				catch (Exception ex)
+				{
+					LogError(ex);
+				}
+			}
+		}
+		public void AddLabel(FLabel label)
+		{
+			AddChild(label);
+			messageLabels.Add(label);
+			//return messageLabels.Count - 1;
+		}
+		public FLabel GetOrAddLabel(int index)
+		{
+			if (messageLabels.IndexInRange(index))
+			{
+				return messageLabels[index];
+			}
+			else
+			{
+				AddLabel(new FLabel(GetFont(), "__TEXT__")
+				{
+					anchorX = 0f,
+					anchorY = 1f
+				});
+				return messageLabels[messageLabels.Count - 1];
+			}
+		}
+		// void IGetDestroyNotice<UpdatableAndDeletable>.ObjectDestroyed(UpdatableAndDeletable thing)
+		// {
+		// 	slatedForDeletion = true;
+		// 	LogTrace($"Destroy notification received - {slatedForDeletion}");
+		// }
+	}
 }
