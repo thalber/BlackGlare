@@ -4,7 +4,7 @@ namespace BlackGlare;
 
 public abstract class Descriptor<TSubject>
 {
-	public readonly Selector<TSubject> selector;
+	public Selector<TSubject> selector;
 	public readonly Guid guid;
 
 	public Descriptor(Selector<TSubject> selector, System.Guid guid)

@@ -15,13 +15,15 @@ public abstract class Selector<TItem>
 	{
 		return new JoinOr(this, other);
 	}
-	public static Selector<TItem> operator &(Selector<TItem> a, Selector<TItem> b) {
+	public static Selector<TItem> operator &(Selector<TItem> a, Selector<TItem> b)
+	{
 		return a.And(b);
 	}
-	public static Selector<TItem> operator |(Selector<TItem> a, Selector<TItem> b) {
+	public static Selector<TItem> operator |(Selector<TItem> a, Selector<TItem> b)
+	{
 		return a.Or(b);
 	}
-	
+
 	public class Downcast<TDown> : Selector<TItem>
 	{
 		//TDown xd = default;
@@ -41,17 +43,29 @@ public abstract class Selector<TItem>
 		}
 		public override bool Selected(TItem item) => filterCallback(item);
 	}
-	public sealed class ByDowncastCallback<TE> : SelectorAbstractEntity.Downcast<TE>
+	public sealed class ByDowncastChain<TDown> : Selector<TItem>
 	{
-		private readonly Func<TE, bool> filterCallback;
+		private readonly Selector<TDown> chain;
+		public ByDowncastChain(Selector<TDown> chained)
+		{
+			this.chain = chained;
+		}
+		public override bool Selected(TItem item)
+		{
+			return item is TDown down && chain.Selected(down);
+		}
+	}
+	public sealed class ByDowncastCallback<TDown> : Downcast<TDown>
+	{
+		private readonly Func<TDown, bool> filterCallback;
 
-		public ByDowncastCallback(System.Func<TE, bool> filterCallback)
+		public ByDowncastCallback(System.Func<TDown, bool> filterCallback)
 		{
 			this.filterCallback = filterCallback;
 		}
-		public override bool Selected(AbstractWorldEntity item)
+		public override bool Selected(TItem item)
 		{
-			return item is TE downcast && filterCallback(downcast);
+			return item is TDown downcast && filterCallback(downcast);
 		}
 	}
 	public sealed class JoinOr : Selector<TItem>
@@ -77,5 +91,13 @@ public abstract class Selector<TItem>
 			this.r = r;
 		}
 		public override bool Selected(TItem item) => l.Selected(item) && r.Selected(item);
+	}
+	public sealed class All : Selector<TItem>
+	{
+		public override bool Selected(TItem item) => true;
+	}
+	public sealed class None : Selector<TItem>
+	{
+		public override bool Selected(TItem item) => false;
 	}
 }
