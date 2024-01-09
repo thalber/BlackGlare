@@ -39,6 +39,10 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			RoomCamera? roomCamera = game?.cameras[0];
 			if (roomCamera is null) continue;
 			panel.Update(roomCamera, roomCamera.pos);
+			if (panel.slatedForDeletion)
+			{
+				panels.Remove(panel.item);
+			}
 		}
 	}
 	public override void RoomChanged(Room? newRoom)
