@@ -237,7 +237,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		protected readonly string id;
 		protected readonly Visualizer<TSelf> vis;
 		protected readonly TItem item;
-		protected readonly MessageRegistry<TItem> messages;
+		protected readonly DescriptorSet<TItem> messages;
 		protected readonly FSprite background;
 		protected readonly List<FLabel> messageLabels;
 		protected readonly FLabel header;
@@ -253,7 +253,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 			string id,
 			Visualizer<TSelf> vis,
 			TItem item,
-			MessageRegistry<TItem> messages)
+			DescriptorSet<TItem> messages)
 		{
 			this.id = id;
 			this.vis = vis;

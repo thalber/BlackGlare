@@ -53,7 +53,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			string id,
 			VisualizerRealEntityMessage vis,
 			PhysicalObject item,
-			MessageRegistry<PhysicalObject> messages) : base(
+			DescriptorSet<PhysicalObject> messages) : base(
 				id,
 				vis,
 				item,
