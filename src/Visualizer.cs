@@ -4,7 +4,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 {
 	#region static state hooking
 	private readonly static System.Runtime.CompilerServices.ConditionalWeakTable<RainWorldGame, TSelf> instances = new();
-	private static BepInEx.Logging.ManualLogSource? logger;
+	protected static BepInEx.Logging.ManualLogSource? logger;
 	private static TSelf Make(RainWorldGame game)
 	{
 		TSelf creating = new();
@@ -236,7 +236,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		protected readonly float lineHeight;
 		protected readonly string id;
 		protected readonly Visualizer<TSelf> vis;
-		protected readonly TItem item;
+		public readonly TItem item;
 		protected readonly DescriptorSet<TItem> messages;
 		protected readonly FSprite background;
 		protected readonly List<FLabel> messageLabels;
@@ -247,7 +247,7 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		//protected abstract Vector2 AttachPos { get; }
 
 		//private readonly FLabel tag;
-		protected bool slatedForDeletion = false;
+		public bool slatedForDeletion = false;
 
 		public AttachedPanel(
 			string id,
