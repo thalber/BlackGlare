@@ -4,7 +4,7 @@ internal class DescriptorSet<TSubject>
 {
 	private readonly List<Descriptor<TSubject>> descriptors = new();
 
-	public IEnumerable<string> GetAllMessages(TSubject subject)
+	public virtual IEnumerable<string> GetAllMessages(TSubject subject)
 	{
 		for (int i = 0; i < descriptors.Count; i++)
 		{
@@ -33,4 +33,20 @@ internal class DescriptorSet<TSubject>
 		return false;
 	}
 	public bool RemoveDescriptor(Descriptor<TSubject> descriptor) => descriptors.Remove(descriptor);
+	public class WrapFrom<TWrap> : DescriptorSet<TWrap>
+	{
+		private readonly DescriptorSet<TSubject> actual;
+		private readonly Func<TWrap, TSubject> convert;
+		public WrapFrom(DescriptorSet<TSubject> actual, Func<TWrap, TSubject> convert)
+		{
+			this.actual = actual;
+			this.convert = convert;
+		}
+
+		public override IEnumerable<string> GetAllMessages(TWrap subject)
+		{
+			return actual.GetAllMessages(convert(subject));
+		}
+
+	}
 }

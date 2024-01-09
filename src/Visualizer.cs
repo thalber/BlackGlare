@@ -242,8 +242,8 @@ public class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		protected readonly List<FLabel> messageLabels;
 		protected readonly FLabel header;
 
-		protected virtual string HeaderText { get => item.ToString(); }
-		protected virtual Color HeaderCol { get => new(0.529f, 0.365f, 0.184f); }
+		public virtual string HeaderText { get => item.ToString(); }
+		public virtual Color HeaderCol { get => new(0.529f, 0.365f, 0.184f); }
 		//protected abstract Vector2 AttachPos { get; }
 
 		//private readonly FLabel tag;

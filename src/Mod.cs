@@ -20,7 +20,8 @@ public class Mod : BepInEx.BaseUnityPlugin
 		__SwitchToBepinexLogger(Logger);
 		__writeCallsiteInfo = false;
 		__writeTrace = true;
-		VisualizerRealEntityMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + "GetReal"));
+		VisualizerRealEntityMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + " Get Real"));
+		VisualizerRoomMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + " Roomies"));
 		On.UpdatableAndDeletable.Destroy += Hook_NotifyUADDestroy;
 
 		Selector<PhysicalObject>.Downcast<Player> selector = new();
@@ -28,6 +29,10 @@ public class Mod : BepInEx.BaseUnityPlugin
 		Descriptor<PhysicalObject>.ByCallback providerJumpBoost = new (selector, Guid.NewGuid(), (po) => $"jump boost {((Player)po).jumpBoost}");
 		realEntityMessages.AddDescriptor(providerRollCounter);
 		realEntityMessages.AddDescriptor(providerJumpBoost);
+
+		Selector<AbstractRoom>.ByCallback selector2 = new((room) => true);
+		Descriptor<AbstractRoom>.ByCallback numberOfEntities = new(selector2, Guid.NewGuid(), (room) => $"Number of entitites {room.entities.Count}");
+		roomMessages.AddDescriptor(numberOfEntities);
 	}
 	public void Hook_NotifyUADDestroy(On.UpdatableAndDeletable.orig_Destroy orig, UpdatableAndDeletable self)
 	{

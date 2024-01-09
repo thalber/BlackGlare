@@ -33,15 +33,24 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 				LogError(ex);
 			}
 		}
+		RoomCamera? roomCamera = game?.cameras[0];
+		Vector2 pos = roomCamera?.pos ?? Vector2.zero;
+		if (roomCamera is null) return;
 		for (int i = childNodes.Count - 1; i >= 0; i--)
 		{
 			PhysobjPanel panel = (PhysobjPanel)childNodes[i];
-			RoomCamera? roomCamera = game?.cameras[0];
-			if (roomCamera is null) continue;
-			panel.Update(roomCamera, roomCamera.pos);
-			if (panel.slatedForDeletion)
+			try
 			{
-				panels.Remove(panel.item);
+				panel.Update(roomCamera, pos);
+				if (panel.slatedForDeletion)
+				{
+					panels.Remove(panel.item);
+				}
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError($"error on create panel for object {panel.HeaderText}");
+				logger?.LogError(ex);
 			}
 		}
 	}
@@ -52,7 +61,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 	private sealed class PhysobjPanel : AttachedPanel<PhysicalObject>
 	{
 		private Room room;
-		protected override string HeaderText => $"{item.GetType().Name} {item.abstractPhysicalObject.ID}";
+		public override string HeaderText => $"{item.GetType().Name} {item.abstractPhysicalObject.ID}";
 		public PhysobjPanel(
 			string id,
 			VisualizerRealEntityMessage vis,
