@@ -2,9 +2,14 @@ using UnityEngine;
 
 namespace BlackGlare;
 
+/// <summary>
+/// Preset selectors for physical objects.
+/// </summary>
 public abstract class SelectorPhysicalObject : Selector<PhysicalObject>
 {
-	
+	/// <summary>
+	/// Uses a unity collider to check chunk position.
+	/// </summary>
 	public sealed class ByChunkPosition : SelectorPhysicalObject
 	{
 		private readonly int chunkIndex;
