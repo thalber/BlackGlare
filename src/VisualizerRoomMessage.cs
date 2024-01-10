@@ -38,27 +38,6 @@ public sealed class VisualizerRoomMessage : Visualizer<VisualizerRoomMessage>
 				}
 			}
 		}
-		RoomCamera? camera = game?.cameras[0];
-		Vector2 camPos = camera?.pos ?? Vector2.zero;
-		if (camera is null) return;
-		for (int i = childNodes.Count - 1; i >= 0; i--)
-		{
-			roomExtrasPanel extrasPanel = (roomExtrasPanel)childNodes[i];
-			try
-			{
-				extrasPanel.Update(camera, camPos);
-				if (extrasPanel.slatedForDeletion)
-				{
-					panels.Remove(extrasPanel.item);
-				}
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"error on update panel for room {extrasPanel.item.roomRep.room.name}");
-				logger?.LogError(ex);
-			}
-		}
-
 	}
 	private sealed class roomExtrasPanel : AttachedPanel<DevInterface.RoomPanel>
 	{
@@ -75,13 +54,13 @@ public sealed class VisualizerRoomMessage : Visualizer<VisualizerRoomMessage>
 				messages)
 		{
 		}
-		public override void Update(RoomCamera cam, Vector2 camPos)
+		public override void Update(RoomCamera cam)
 		{
 			if (devUI is null || devUI.activePage is not DevInterface.MapPage mapPage)
 			{
 				slatedForDeletion = true;
 			}
-			base.Update(cam, camPos);
+			base.Update(cam);
 		}
 		public override Vector2 GetAttachPos(RoomCamera cam, Vector2 camPos) => item.absPos + item.size;
 	}

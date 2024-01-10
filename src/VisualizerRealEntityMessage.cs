@@ -1,5 +1,8 @@
 namespace BlackGlare;
 
+/// <summary>
+/// Visualizer that draws panels with messages for physicalobjects.
+/// </summary>
 public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntityMessage>
 {
 	private Mod mod;
@@ -17,7 +20,6 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 		{
 			try
 			{
-
 				if (uad is not PhysicalObject po) continue;
 				if (!panels.TryGetValue(po, out PhysobjPanel panel) || !childNodes.Contains(panel))
 				{
@@ -31,26 +33,6 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			{
 				LogError("Error on create panel");
 				LogError(ex);
-			}
-		}
-		RoomCamera? roomCamera = game?.cameras[0];
-		Vector2 pos = roomCamera?.pos ?? Vector2.zero;
-		if (roomCamera is null) return;
-		for (int i = childNodes.Count - 1; i >= 0; i--)
-		{
-			PhysobjPanel panel = (PhysobjPanel)childNodes[i];
-			try
-			{
-				panel.Update(roomCamera, pos);
-				if (panel.slatedForDeletion)
-				{
-					panels.Remove(panel.item);
-				}
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"error on create panel for object {panel.HeaderText}");
-				logger?.LogError(ex);
 			}
 		}
 	}
@@ -75,7 +57,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			room = item.room;
 		}
 		public override Vector2 GetAttachPos(RoomCamera cam, Vector2 camPos) => item.firstChunk.pos - camPos + UNSCRUNGLE_FUTILE;
-		public override void Update(RoomCamera cam, Vector2 camPos)
+		public override void Update(RoomCamera cam)
 		{
 			if (item.slatedForDeletetion
 				|| item.abstractPhysicalObject.slatedForDeletion
@@ -83,7 +65,7 @@ public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntit
 			{
 				slatedForDeletion = true;
 			}
-			base.Update(cam, camPos);
+			base.Update(cam);
 		}
 	}
 }
