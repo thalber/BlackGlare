@@ -1,6 +1,6 @@
 namespace BlackGlare;
 
-internal class DescriptorSet<TSubject>
+public class DescriptorSet<TSubject>
 {
 	private readonly List<Descriptor<TSubject>> descriptors = new();
 
