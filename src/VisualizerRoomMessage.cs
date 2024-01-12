@@ -2,13 +2,12 @@ namespace BlackGlare;
 
 public sealed class VisualizerRoomMessage : Visualizer<VisualizerRoomMessage>
 {
-	private Mod mod;
+	//private Mod mod;
 	private DescriptorSet<AbstractRoom>.WrapFrom<DevInterface.RoomPanel> descriptorSetWrapper;
 	private readonly Dictionary<DevInterface.RoomPanel, roomExtrasPanel> panels = new();
 	public override void Start(RainWorldGame game)
 	{
 		base.Start(game);
-		mod = UnityEngine.Object.FindObjectOfType<Mod>();
 		descriptorSetWrapper = new(mod.roomMessages, (panel) => panel.roomRep.room);
 	}
 	public override void Update()

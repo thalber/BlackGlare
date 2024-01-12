@@ -25,10 +25,11 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	{
 		if (enabled) throw new InvalidOperationException($"{typeof(TSelf)} is already enabled");
 		logger = switchToLogger;
-		On.RainWorldGame.ctor += Hook_RWGConstructor;
-		On.RainWorldGame.RawUpdate += Hook_RWGRawUpdate;
-		On.RainWorldGame.Update += Hook_RWGUpdate;
-		On.RainWorldGame.ShutDownProcess += Hook_RWGShutdown;
+		Mod mod = UnityEngine.Object.FindObjectOfType<Mod>();
+		mod.OnRWGCreate += OnCreate;
+		mod.OnRWGRawUpdate += OnRawUpdate;
+		mod.OnRWGUpdate += OnUpdate;
+		mod.OnRWGShutdown += OnShutdown;
 		enabled = true;
 		return new(typeof(TSelf), Undo);
 	}
@@ -37,96 +38,68 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// </summary>
 	public static void Undo()
 	{
-		On.RainWorldGame.ctor -= Hook_RWGConstructor;
-		On.RainWorldGame.RawUpdate -= Hook_RWGRawUpdate;
-		On.RainWorldGame.Update -= Hook_RWGUpdate;
-		On.RainWorldGame.ShutDownProcess -= Hook_RWGShutdown;
+		Mod mod = UnityEngine.Object.FindObjectOfType<Mod>();
+		mod.OnRWGCreate -= OnCreate;
+		mod.OnRWGRawUpdate -= OnRawUpdate;
+		mod.OnRWGUpdate -= OnUpdate;
+		mod.OnRWGShutdown -= OnShutdown;
 		enabled = false;
 	}
-	private static void Hook_RWGConstructor(On.RainWorldGame.orig_ctor orig, RainWorldGame self, ProcessManager manager)
+	public static void OnCreate(RainWorldGame self)
 	{
 		try
 		{
-			orig(self, manager);
+			instances.Add(self, Visualizer<TSelf>.Make(self));
 		}
-		finally
+		catch (Exception ex)
 		{
-			try
-			{
-				instances.Add(self, Visualizer<TSelf>.Make(self));
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"Error on init");
-				logger?.LogError(ex);
-			}
+			logger?.LogError($"Error on init");
+			logger?.LogError(ex);
 		}
 	}
-	private static void Hook_RWGRawUpdate(On.RainWorldGame.orig_RawUpdate orig, RainWorldGame self, float delta)
+	public static void OnRawUpdate(RainWorldGame self, float delta)
 	{
 		try
 		{
-			orig(self, delta);
+			if (instances.TryGetValue(self, out TSelf instance))
+			{
+				instance.RawUpdate(delta);
+			}
 		}
-		finally
+		catch (Exception ex)
 		{
-			try
-			{
-				if (instances.TryGetValue(self, out TSelf instance))
-				{
-					instance.RawUpdate(delta);
-				}
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"Error on rawupdate");
-				logger?.LogError(ex);
-			}
+			logger?.LogError($"Error on rawupdate");
+			logger?.LogError(ex);
 		}
 	}
-	private static void Hook_RWGUpdate(On.RainWorldGame.orig_Update orig, RainWorldGame self)
+	public static void OnUpdate(RainWorldGame self)
 	{
 		try
 		{
-			orig(self);
+			if (instances.TryGetValue(self, out TSelf instance))
+			{
+				instance.Update();
+			}
 		}
-		finally
+		catch (Exception ex)
 		{
-			try
-			{
-				if (instances.TryGetValue(self, out TSelf instance))
-				{
-					instance.Update();
-				}
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"Error on update");
-				logger?.LogError(ex);
-			}
+			logger?.LogError($"Error on update");
+			logger?.LogError(ex);
 		}
 	}
-	private static void Hook_RWGShutdown(On.RainWorldGame.orig_ShutDownProcess orig, RainWorldGame self)
+	public static void OnShutdown(RainWorldGame self)
 	{
 		try
 		{
-
-			orig(self);
+			if (instances.TryGetValue(self, out TSelf result))
+			{
+				result.ShutDown();
+			}
 		}
-		finally
+		catch (Exception ex)
 		{
-			try
-			{
-				if (instances.TryGetValue(self, out TSelf result))
-				{
-					result.ShutDown();
-				}
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError($"Error shutting down visualizer");
-				logger?.LogError(ex);
-			}
+			logger?.LogError($"Error shutting down visualizer");
+			logger?.LogError(ex);
 		}
 	}
 	#endregion
@@ -140,6 +113,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// </summary>
 	public Room? room { get; protected set; }
 	public RainWorldGame? game { get; protected set; }
+	public Mod mod;
 	/// <summary>
 	/// All fnodes in this visualizer. Modifying directly is not advised.
 	/// </summary>
@@ -164,6 +138,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	public virtual void Start(RainWorldGame game)
 	{
 		this.game = game;
+		mod = UnityEngine.Object.FindObjectOfType<Mod>();
 	}
 	/// <summary>
 	/// Bound to RWG.RawUpdate.
@@ -212,6 +187,10 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	public void ShutDown()
 	{
 		ClearNodes();
+	}
+	protected void ToggleVisible()
+	{
+		isVisible = !isVisible;
 	}
 	protected T? FindOtherVis<T>()
 		where T : Visualizer<T>, new()

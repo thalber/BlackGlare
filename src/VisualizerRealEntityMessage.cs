@@ -5,12 +5,10 @@ namespace BlackGlare;
 /// </summary>
 public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntityMessage>
 {
-	private Mod mod;
 	private readonly Dictionary<PhysicalObject, PhysobjPanel> panels = new();
 	public override void Start(RainWorldGame game)
 	{
 		base.Start(game);
-		mod = UnityEngine.Object.FindObjectOfType<Mod>();
 	}
 	public override void Update()
 	{
