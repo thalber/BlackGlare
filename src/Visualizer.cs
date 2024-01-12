@@ -7,9 +7,10 @@ namespace BlackGlare;
 public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 {
 	#region static state hooking
-	private readonly static System.Runtime.CompilerServices.ConditionalWeakTable<RainWorldGame, TSelf> instances = new();
+	protected readonly static System.Runtime.CompilerServices.ConditionalWeakTable<RainWorldGame, TSelf> instances = new();
 	protected static BepInEx.Logging.ManualLogSource? logger;
-	private static TSelf Make(RainWorldGame game)
+	private static bool enabled = false;
+	protected static TSelf Make(RainWorldGame game)
 	{
 		TSelf creating = new();
 		creating.Start(game);
@@ -22,11 +23,13 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// <returns>Stuff necessary to undo hooks and clear statics without knowing a concrete type.</returns>
 	public static VisualizerConcreteInfo Init(BepInEx.Logging.ManualLogSource? switchToLogger)
 	{
+		if (enabled) throw new InvalidOperationException($"{typeof(TSelf)} is already enabled");
 		logger = switchToLogger;
 		On.RainWorldGame.ctor += Hook_RWGConstructor;
 		On.RainWorldGame.RawUpdate += Hook_RWGRawUpdate;
 		On.RainWorldGame.Update += Hook_RWGUpdate;
 		On.RainWorldGame.ShutDownProcess += Hook_RWGShutdown;
+		enabled = true;
 		return new(typeof(TSelf), Undo);
 	}
 	/// <summary>
@@ -38,6 +41,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		On.RainWorldGame.RawUpdate -= Hook_RWGRawUpdate;
 		On.RainWorldGame.Update -= Hook_RWGUpdate;
 		On.RainWorldGame.ShutDownProcess -= Hook_RWGShutdown;
+		enabled = false;
 	}
 	private static void Hook_RWGConstructor(On.RainWorldGame.orig_ctor orig, RainWorldGame self, ProcessManager manager)
 	{
@@ -153,7 +157,6 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// <summary>
 	/// Indicates whether the visualizer wants to clear all sprites on switching rooms.
 	/// </summary>
-
 	public virtual bool ClearSpritesOnRoomChange => true;
 	/// <summary>
 	/// Since we can't have proper constructor constraints on generics, this is unfortunately the ""constructor"". Called on RWG constructor.
@@ -209,6 +212,13 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	public void ShutDown()
 	{
 		ClearNodes();
+	}
+	protected T? FindOtherVis<T>()
+		where T : Visualizer<T>, new()
+	{
+		if (this.game is null) return null;
+		Visualizer<T>.instances.TryGetValue(this.game, out T? result);
+		return result;
 	}
 	/// <summary>
 	/// Adds a new child node to child list and futile scene.
