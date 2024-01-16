@@ -9,23 +9,26 @@ public class Mod : BepInEx.BaseUnityPlugin
 	internal BepInEx.Configuration.ConfigEntry<bool>? cfgLFWriteTrace;
 	internal BepInEx.Configuration.ConfigEntry<bool>? cfgLFWriteCallsite;
 	internal BepInEx.Configuration.ConfigEntry<KeyCode>? cfgActivationKey;
+	internal BepInEx.Configuration.ConfigEntry<bool>? cfgEnable;
 	internal event Action<RainWorldGame>? OnRWGCreate;
 	internal event Action<RainWorldGame, float>? OnRWGRawUpdate;
 	internal event Action<RainWorldGame>? OnRWGUpdate;
 	internal event Action<RainWorldGame>? OnRWGShutdown;
-
+	internal Dictionary<(Type? visualizer, string id), Keybind> keybinds = new();
 	internal DescriptorSet<AbstractWorldEntity> abstractEntityMessages = new();
 	internal DescriptorSet<PhysicalObject> realEntityMessages = new();
 	internal DescriptorSet<AbstractRoom> roomMessages = new();
+	internal FContainer mainVisContainer = new();
+	internal bool uiEnabled => cfgEnable?.Value ?? false;
 
 	public void OnEnable()
 	{
-
 		__SwitchToBepinexLogger(Logger);
 		On.RainWorldGame.ctor += Hook_RWGConstructor;
 		On.RainWorldGame.RawUpdate += Hook_RWGRawUpdate;
 		On.RainWorldGame.Update += Hook_RWGUpdate;
 		On.RainWorldGame.ShutDownProcess += Hook_RWGShutdown;
+		//On.RainWorld.Start += Hook_RWStart;
 		cfgLFWriteTrace = Config.Bind("logging", "writeTrace", false, "Write trace level log strings");
 		cfgLFWriteTrace.SettingChanged += (sender, args) =>
 		{
@@ -38,7 +41,7 @@ public class Mod : BepInEx.BaseUnityPlugin
 			__writeCallsiteInfo = cfgLFWriteCallsite.Value;
 		};
 		__writeCallsiteInfo = cfgLFWriteCallsite.Value;
-		cfgActivationKey = Config.Bind("input", "mainActionKey", KeyCode.KeypadPlus);
+		cfgEnable = Config.Bind("general", "enable", false, "Enable the mod and list controls in options menu");
 
 		VisualizerRealEntityMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + "/visPhysobj"));
 		VisualizerRoomMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + "/visAbsRoom"));
@@ -51,7 +54,18 @@ public class Mod : BepInEx.BaseUnityPlugin
 		API.Labels.AddRoomLabel(room => $"ec {room.entities.Count}");
 	}
 
-
+	public Keybind GetKeybind<TVis>(string id, string desc, KeyCode def)
+		where TVis : Visualizer<TVis>, new()
+	{
+		Type ttvis = typeof(TVis);
+		if (!keybinds.TryGetValue((ttvis, id), out Keybind kb))
+		{
+			string section = $"{Visualizer<TVis>.GlobalName}";
+			kb = new(ttvis, Config.Bind(section, id, def, desc));
+			keybinds[(ttvis, id)] = kb;
+		}
+		return kb;
+	}
 	private void Hook_RWGConstructor(On.RainWorldGame.orig_ctor orig, RainWorldGame self, ProcessManager manager)
 	{
 		try
@@ -94,6 +108,20 @@ public class Mod : BepInEx.BaseUnityPlugin
 					LogError(ex);
 				}
 			}
+			mainVisContainer.isVisible = cfgEnable?.Value ?? false;
+			if (mainVisContainer.container is null)
+			{
+				try
+				{
+					Futile.stage.AddChild(mainVisContainer);
+					if (mainVisContainer.container is null) throw new InvalidOperationException($"Parent is null!");
+				}
+				catch (Exception ex)
+				{
+					Logger.LogError($"Error adding visualizer container");
+					Logger.LogError(ex);
+				}
+			}
 		}
 	}
 	private void Hook_RWGUpdate(On.RainWorldGame.orig_Update orig, RainWorldGame self)
@@ -104,6 +132,17 @@ public class Mod : BepInEx.BaseUnityPlugin
 		}
 		finally
 		{
+			foreach (Keybind kb in keybinds.Values)
+			{
+				try
+				{
+					kb.Update();
+				}
+				catch (Exception ex)
+				{
+					LogError($"{kb} error on update : {ex}");
+				}
+			}
 			foreach (Action<RainWorldGame> sub in (OnRWGUpdate?.GetInvocationList() ?? new Delegate[0]))
 			{
 				try
@@ -141,4 +180,5 @@ public class Mod : BepInEx.BaseUnityPlugin
 			}
 		}
 	}
+
 }

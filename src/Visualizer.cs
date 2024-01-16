@@ -31,6 +31,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		mod.OnRWGUpdate += OnUpdate;
 		mod.OnRWGShutdown += OnShutdown;
 		enabled = true;
+		TSelf dummy = new();
 		return new(typeof(TSelf), Undo);
 	}
 	/// <summary>
@@ -104,6 +105,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	#endregion
 	#region look guys im a normal class you can trust me (:
+	public static string GlobalName { get; protected set; } = typeof(TSelf).Name;
 	/// <summary>
 	/// Whether visualizer should be drawn.
 	/// </summary>
@@ -113,7 +115,16 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// </summary>
 	public Room? room { get; protected set; }
 	public RainWorldGame? game { get; protected set; }
-	public Mod mod;
+	/// <summary>
+	/// Indicates whether the visualizer wants to clear all sprites on switching rooms.
+	/// </summary>
+	public virtual bool ClearSpritesOnRoomChange => true;
+	/// <summary>
+	/// Default key for toggling the visualizer on or off.
+	/// </summary>
+	protected virtual KeyCode toggleDefaultBind => KeyCode.None;
+	protected virtual string Name => typeof(TSelf).Name;
+	public readonly Mod mod;
 	/// <summary>
 	/// All fnodes in this visualizer. Modifying directly is not advised.
 	/// </summary>
@@ -121,24 +132,28 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// <summary>
 	/// Links keys to <see cref="childNodes"/> indices. Modifying directly is not advised.
 	/// </summary>
-	/// <returns></returns>
 	protected readonly Dictionary<string, int> childNodeIndices = new();
 	/// <summary>
 	/// Contains all nodes that should receive update calls.
 	/// </summary>
-	/// <returns></returns>
 	protected readonly List<IVisDynamicNode> dynamicNodes = new();
 	/// <summary>
-	/// Indicates whether the visualizer wants to clear all sprites on switching rooms.
+	/// Keybind that toggles the entire thing.
 	/// </summary>
-	public virtual bool ClearSpritesOnRoomChange => true;
+	protected Keybind kbToggle;
+	public Visualizer()
+	{
+		mod = UnityEngine.Object.FindObjectOfType<Mod>();
+		if (mod is null) throw new InvalidOperationException("Failed to find mod instance");
+		kbToggle = GetKeybind("toggle", "Switch this module on or off", toggleDefaultBind);
+	}
 	/// <summary>
 	/// Since we can't have proper constructor constraints on generics, this is unfortunately the ""constructor"". Called on RWG constructor.
 	/// </summary>
 	public virtual void Start(RainWorldGame game)
 	{
 		this.game = game;
-		mod = UnityEngine.Object.FindObjectOfType<Mod>();
+		//mod = UnityEngine.Object.FindObjectOfType<Mod>();
 	}
 	/// <summary>
 	/// Bound to RWG.RawUpdate.
@@ -146,21 +161,24 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// <param name="delta"></param>
 	public virtual void RawUpdate(float delta)
 	{
-		if (game?.cameras[0].room != this.room)
-		{
-			RoomChanged(game?.cameras[0].room);
-		}
+		if (kbToggle.RawGetDown) ToggleVisible();
 	}
 	/// <summary>
 	/// Bound to RWG.Update.
 	/// </summary>
 	public virtual void Update()
 	{
-		RoomCamera roomCamera = game.cameras[0];
-		foreach (FNode node in childNodes)
+		if (game?.cameras[0].room != this.room)
 		{
+			RoomChanged(game?.cameras[0].room);
+		}
+		RoomCamera? roomCamera = game?.cameras[0];
+		for (int i = 0; i < childNodes.Count; i++)
+		{
+			FNode node = childNodes[i];
 			node.isVisible = isVisible;
 		}
+		if (roomCamera is null) return;
 		for (int i = dynamicNodes.Count - 1; i >= 0; i--)
 		{
 			IVisDynamicNode nodeAsLC = dynamicNodes[i];
@@ -175,11 +193,10 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 			}
 			catch (Exception ex)
 			{
-				logger?.LogError($"error on update for object {nodeAsLC.ToString()}");
+				logger?.LogError($"error on update for node {nodeAsLC.ToString()}");
 				logger?.LogError(ex);
 			}
 		}
-
 	}
 	/// <summary>
 	/// Bound to RWG.ShutDownProcess.
@@ -191,6 +208,17 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	protected void ToggleVisible()
 	{
 		isVisible = !isVisible;
+	}
+	/// <summary>
+	/// Creates or gets a keybind setting for this visualizer.
+	/// </summary>
+	/// <param name="id">Keybind ID. Should be unique within this visualizer.</param>
+	/// <param name="desc">Short description of what the key does.</param>
+	/// <param name="def">Default assigned key.</param>
+	/// <returns>Newly created or retrieved keybind object.</returns>
+	protected Keybind GetKeybind(string id, string desc, KeyCode def)
+	{
+		return mod.GetKeybind<TSelf>(id, desc, def);
 	}
 	protected T? FindOtherVis<T>()
 		where T : Visualizer<T>, new()
@@ -210,7 +238,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		{
 			throw new ArgumentException($"There is already a child node with key {key}. Node keys have to be unique.");
 		}
-		Futile.stage.AddChild(node);
+		mod.mainVisContainer.AddChild(node);
 		childNodes.Add(node);
 		if (node is IVisDynamicNode dynNode) dynamicNodes.Add(dynNode);
 		childNodeIndices[key] = childNodes.Count - 1;
