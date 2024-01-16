@@ -10,12 +10,6 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	protected readonly static System.Runtime.CompilerServices.ConditionalWeakTable<RainWorldGame, TSelf> instances = new();
 	protected static BepInEx.Logging.ManualLogSource? logger;
 	private static bool enabled = false;
-	protected static TSelf Make(RainWorldGame game)
-	{
-		TSelf creating = new();
-		creating.Start(game);
-		return creating;
-	}
 	/// <summary>
 	/// Applies hooks.
 	/// </summary>
@@ -50,7 +44,9 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	{
 		try
 		{
-			instances.Add(self, Visualizer<TSelf>.Make(self));
+			TSelf newobj = new();
+			newobj.Start(self);
+			instances.Add(self, newobj);
 		}
 		catch (Exception ex)
 		{
