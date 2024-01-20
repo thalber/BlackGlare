@@ -26,6 +26,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		mod.OnRWGShutdown += OnShutdown;
 		enabled = true;
 		TSelf dummy = new();
+		GlobalName = dummy.Name;
 		return new(typeof(TSelf), Undo);
 	}
 	/// <summary>
