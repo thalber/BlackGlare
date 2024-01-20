@@ -1,3 +1,5 @@
+[assembly: System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.RequestMinimum, SkipVerification = true)]
+
 namespace BlackGlare;
 
 [BepInEx.BepInPlugin(ID, DISPLAYNAME, VERSION)]
@@ -54,13 +56,13 @@ public class Mod : BepInEx.BaseUnityPlugin
 		API.Labels.AddRoomLabel(room => $"ec {room.entities.Count}");
 	}
 
-	public Keybind GetKeybind<TVis>(string id, string desc, KeyCode def)
+	public Keybind GetKeybind<TVis>(TVis vis, string id, string desc, KeyCode def)
 		where TVis : Visualizer<TVis>, new()
 	{
 		Type ttvis = typeof(TVis);
 		if (!keybinds.TryGetValue((ttvis, id), out Keybind kb))
 		{
-			string section = $"{Visualizer<TVis>.GlobalName}";
+			string section = vis.Name;
 			kb = new(ttvis, Config.Bind(section, id, def, desc));
 			keybinds[(ttvis, id)] = kb;
 		}
@@ -182,3 +184,4 @@ public class Mod : BepInEx.BaseUnityPlugin
 	}
 
 }
+

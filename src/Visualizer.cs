@@ -26,7 +26,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 		mod.OnRWGShutdown += OnShutdown;
 		enabled = true;
 		TSelf dummy = new();
-		GlobalName = dummy.Name;
+		//GlobalName = dummy.Name;
 		return new(typeof(TSelf), Undo);
 	}
 	/// <summary>
@@ -102,7 +102,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	}
 	#endregion
 	#region look guys im a normal class you can trust me (:
-	public static string GlobalName { get; protected set; } = typeof(TSelf).Name;
+	//public static string GlobalName { get; protected set; } = typeof(TSelf).Name;
 	/// <summary>
 	/// Whether visualizer should be drawn.
 	/// </summary>
@@ -120,7 +120,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// Default key for toggling the visualizer on or off.
 	/// </summary>
 	protected virtual KeyCode toggleDefaultBind => KeyCode.None;
-	protected virtual string Name => typeof(TSelf).Name;
+	public virtual string Name => typeof(TSelf).Name;
 	public readonly Mod mod;
 	/// <summary>
 	/// All fnodes in this visualizer. Modifying directly is not advised.
@@ -138,11 +138,13 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// Keybind that toggles the entire thing.
 	/// </summary>
 	protected Keybind kbToggle;
+	protected Keybind kbToggleControlsList;
 	public Visualizer()
 	{
 		mod = UnityEngine.Object.FindObjectOfType<Mod>();
 		if (mod is null) throw new InvalidOperationException("Failed to find mod instance");
 		kbToggle = GetKeybind("toggle", "Switch this module on or off", toggleDefaultBind);
+		kbToggleControlsList = GetKeybind("controls", "Toggle controls display visibility", KeyCode.None);
 	}
 	/// <summary>
 	/// Since we can't have proper constructor constraints on generics, this is unfortunately the ""constructor"". Called on RWG constructor.
@@ -215,7 +217,7 @@ public abstract class Visualizer<TSelf> where TSelf : Visualizer<TSelf>, new()
 	/// <returns>Newly created or retrieved keybind object.</returns>
 	protected Keybind GetKeybind(string id, string desc, KeyCode def)
 	{
-		return mod.GetKeybind<TSelf>(id, desc, def);
+		return mod.GetKeybind<TSelf>((TSelf)this, id, desc, def);
 	}
 	protected T? FindOtherVis<T>()
 		where T : Visualizer<T>, new()

@@ -6,6 +6,7 @@ namespace BlackGlare;
 public sealed class VisualizerRealEntityMessage : Visualizer<VisualizerRealEntityMessage>
 {
 	private readonly Dictionary<PhysicalObject, PhysobjPanel> panels = new();
+	public override string Name => "PhysicalObjectMessages";
 	public override void Start(RainWorldGame game)
 	{
 		base.Start(game);
