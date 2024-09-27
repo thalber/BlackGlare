@@ -2,7 +2,7 @@ using static UnityEngine.Mathf;
 
 namespace BlackGlare.Extras;
 
-public static class PrimitivesTools
+internal static class PrimitivesTools
 {
 	/// <summary>
 	/// Creates an <see cref="IntRect"/> from two corner points.

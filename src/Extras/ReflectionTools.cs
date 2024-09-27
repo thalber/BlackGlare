@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace BlackGlare.Extras;
 
-public static class ReflectionTools
+internal static class ReflectionTools
 {
 
 

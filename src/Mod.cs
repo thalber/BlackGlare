@@ -23,6 +23,55 @@ public class Mod : BepInEx.BaseUnityPlugin
 	internal FContainer mainVisContainer = new();
 	internal bool uiEnabled => cfgEnable?.Value ?? false;
 
+	//wtf was i doing here
+	// delegate Result Event<Args, Result>(Args args);
+	// Dictionary<(Type, Type), IDictionary> evDicts;
+	// void AddEvent<Args, Result>(string name, Event<Args, Result> ev)
+	// {
+	// 	(Type, Type) key = (typeof(Args), typeof(Result));
+	// 	Dictionary<string, Event<Args, Result>> selectedDict;
+	// 	if (evDicts.TryGetValue(key, out IDictionary val))
+	// 	{
+	// 		selectedDict = (Dictionary<string, Event<Args, Result>>)val;
+	// 	}
+	// 	else
+	// 	{
+	// 		selectedDict = new();
+	// 		evDicts[key] = selectedDict;
+	// 	}
+	// 	selectedDict[name] = ev;
+	// }
+	// Result InvokeEvent<Args, Result>(string name, Args args)
+	// {
+	// 	(Type, Type) key = (typeof(Args), typeof(Result));
+	// 	Dictionary<string, Event<Args, Result>> selectedDict;
+	// 	if (evDicts.TryGetValue(key, out IDictionary val))
+	// 	{
+	// 		selectedDict = (Dictionary<string, Event<Args, Result>>)val;
+	// 	}
+	// 	else
+	// 	{
+	// 		throw new ArgumentException();
+	// 	}
+	// 	if (selectedDict.TryGetValue(name, out var ev))
+	// 	{
+	// 		return ev(args);
+	// 	}
+	// 	else
+	// 	{
+	// 		throw new ArgumentException();
+	// 	}
+	// }
+	// void test()
+	// {
+	// 	Event<string, int> x = (args) =>
+	// 	{
+	// 		Console.WriteLine("guh");
+	// 		return 0;
+	// 	};
+	// }
+
+
 	public void OnEnable()
 	{
 		__SwitchToBepinexLogger(Logger);
@@ -49,11 +98,11 @@ public class Mod : BepInEx.BaseUnityPlugin
 		VisualizerRoomMessage.Init(new BepInEx.Logging.ManualLogSource(Logger.SourceName + "/visAbsRoom"));
 
 		Selector<PhysicalObject>.Downcast<Player> selector = new();
-		API.Labels.AddObjectLabel<Player>(player => $"jmp {player.jumpBoost}");
-		API.Labels.AddObjectLabel<Player>(player => $"rll {player.rollCounter}");
-		API.Labels.AddObjectLabel<Fly>(fly => fly.flap.ToString())
-			.AddCondition(fly => !fly.dead);
-		API.Labels.AddRoomLabel(room => $"ec {room.entities.Count}");
+		// API.Labels.AddObjectLabel<Player>(player => $"jmp {player.jumpBoost}");
+		// API.Labels.AddObjectLabel<Player>(player => $"rll {player.rollCounter}");
+		// API.Labels.AddObjectLabel<Fly>(fly => fly.flap.ToString())
+		// 	.AddCondition(fly => !fly.dead);
+		// API.Labels.AddRoomLabel(room => $"ec {room.entities.Count}");
 	}
 
 	public Keybind GetKeybind<TVis>(TVis vis, string id, string desc, KeyCode def)

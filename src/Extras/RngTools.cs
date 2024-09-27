@@ -2,7 +2,7 @@ using static UnityEngine.Mathf;
 
 namespace BlackGlare.Extras;
 
-public static class RngTools {
+internal static class RngTools {
 	/// <summary>
 	/// Returns a random deviation from start position, up to mDev in both directions. Clamps to given bounds if provided.
 	/// </summary>

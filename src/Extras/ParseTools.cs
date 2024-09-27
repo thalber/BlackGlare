@@ -1,6 +1,6 @@
 namespace BlackGlare.Extras;
 
-public static class ParseTools
+internal static class ParseTools
 {
 	/// <summary>
 	/// Attempts to parse enum value from a string, in a non-throwing fashion.

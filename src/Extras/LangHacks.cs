@@ -1,6 +1,6 @@
 namespace BlackGlare.Extras;
 
-public static class LanguageHacks {
+internal static class LanguageHacks {
 
     /// <summary>
 	/// Deconstructs a KeyValuePair.

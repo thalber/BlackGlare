@@ -1,6 +1,6 @@
 ﻿namespace BlackGlare.Extras;
 
-public static class RainWorldTools
+internal static class RainWorldTools
 {
 	public readonly static Vector2 UNSCRUNGLE_FUTILE = new(0.01f, 0.01f);
 	/// <summary>

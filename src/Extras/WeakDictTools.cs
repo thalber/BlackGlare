@@ -1,6 +1,6 @@
 namespace BlackGlare.Extras;
 
-public static class WeakDictTools
+internal static class WeakDictTools
 {
 #if false
 	//moved from SlimeCubed's ConditionalEffects

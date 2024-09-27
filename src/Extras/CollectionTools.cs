@@ -1,6 +1,6 @@
 namespace BlackGlare.Extras;
 
-public static class CollectionTools
+internal static class CollectionTools
 {
 	/// <summary>
 	/// Attempts getting an item at specified index; if none found, uses default value.
